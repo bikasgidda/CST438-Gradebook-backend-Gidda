@@ -1,5 +1,7 @@
 package com.cst438.controllers;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -155,6 +157,92 @@ public class GradeBookController {
 		}
 		
 	}
+	
+	@PostMapping("/addAssignment")
+   public void addAssignment(@RequestBody AssignmentListDTO.AssignmentDTO assignment) throws ParseException {
+      String email = "dwisneski@csumb.edu";  // user name (should be instructor's email) 
+   
+      Course c = courseRepository.findById(assignment.courseId).orElse(null);
+      if (c == null) {
+         throw new ResponseStatusException( HttpStatus.BAD_REQUEST, "Invalid course primary key. "+assignment.courseId);
+      }
+      if (!c.getInstructor().equals(email)) {
+         throw new ResponseStatusException( HttpStatus.UNAUTHORIZED, "Not Authorized. " );
+      }
+      if (assignment.assignmentName == null || assignment.assignmentName.isBlank()) {
+         throw new ResponseStatusException( HttpStatus.BAD_REQUEST, "Invalid assignment name.");
+      }
+   
+      if (assignment.dueDate == null || assignment.dueDate.isBlank()) {
+         throw new ResponseStatusException( HttpStatus.BAD_REQUEST, "Invalid date format.");
+      }
+      SimpleDateFormat obj = new SimpleDateFormat("yyyy-MM-dd"); 
+      long date = obj.parse(assignment.dueDate).getTime();
+      
+      Assignment a = new Assignment();
+      a.setCourse(c);
+      a.setNeedsGrading(1);
+      a.setName(assignment.assignmentName);
+      a.setDueDate(new java.sql.Date(date));
+   
+      assignmentRepository.save(a);
+   }
+   
+   @PostMapping("/editAssignment")
+   public void editAssignmentName(@RequestBody  AssignmentListDTO.AssignmentDTO assignment) {
+      String email = "dwisneski@csumb.edu";  // user name (should be instructor's email) 
+      
+      if (assignment.assignmentName == null || assignment.assignmentName.isBlank()) {
+         throw new ResponseStatusException( HttpStatus.BAD_REQUEST, "Invalid assignment name.");
+      }
+      
+      Assignment old = assignmentRepository.findById(assignment.assignmentId).orElse(null);
+      
+      if (old == null) {
+         throw new ResponseStatusException( HttpStatus.BAD_REQUEST, "Invalid assignment primary key. "+assignment.assignmentId);
+      }
+      
+      Course c = old.getCourse();
+      if (!c.getInstructor().equals(email)) {
+         throw new ResponseStatusException( HttpStatus.UNAUTHORIZED, "Not Authorized. " );
+      }
+      
+      old.setName(assignment.assignmentName);
+      assignmentRepository.save(old);
+   }
+   
+   @PutMapping("/deleteAssignment")
+   public void deleteAssignment(@RequestBody AssignmentListDTO.AssignmentDTO assignment) {
+      String email = "dwisneski@csumb.edu";  // user name (should be instructor's email) 
+      
+      Assignment a = assignmentRepository.findById(assignment.assignmentId).orElse(null);
+      int a_id = assignment.assignmentId;
+      
+      if (a == null) {
+         throw new ResponseStatusException( HttpStatus.BAD_REQUEST, "Invalid assignment primary key. "+a_id);
+      }
+      
+      Course c = a.getCourse();
+      if (!c.getInstructor().equals(email)) {
+         throw new ResponseStatusException( HttpStatus.UNAUTHORIZED, "Not Authorized. " );
+      }
+      
+      List<AssignmentGrade> grades = assignmentGradeRepository.findByAssignmentId(assignment.assignmentId);
+
+      // Make sure no grades for assignment
+      for (AssignmentGrade g : grades) {
+         if (!g.getScore().isEmpty()) {
+            throw new ResponseStatusException( HttpStatus.BAD_REQUEST, "Cannot delete. Grades exist for assignment "+a_id);
+         }
+      }
+      
+      for (AssignmentGrade g :grades) {
+         assignmentGradeRepository.delete(g);
+      }
+
+      assignmentRepository.deleteById(a_id);
+      
+   }
 	
 	private Assignment checkAssignment(int assignmentId, String email) {
 		// get assignment 
