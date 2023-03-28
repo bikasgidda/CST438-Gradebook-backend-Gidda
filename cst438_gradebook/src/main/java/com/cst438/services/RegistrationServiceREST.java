@@ -7,20 +7,18 @@ import com.cst438.domain.CourseDTOG;
 
 public class RegistrationServiceREST extends RegistrationService {
 
-	
-	RestTemplate restTemplate = new RestTemplate();
-	
-	@Value("${registration.url}") 
-	String registration_url;
-	
-	public RegistrationServiceREST() {
-		System.out.println("REST registration service ");
-	}
-	
-	@Override
-	public void sendFinalGrades(int course_id , CourseDTOG courseDTO) { 
-		
-		//TODO  complete this method in homework 4
-		
-	}
+   
+   RestTemplate restTemplate = new RestTemplate();
+   
+   @Value("${registration.url}") 
+   String registration_url;
+   
+   public RegistrationServiceREST() {
+      System.out.println("REST registration service ");
+   }
+   
+   @Override
+   public void sendFinalGrades(int course_id , CourseDTOG courseDTO) { 
+      restTemplate.put("http://localhost:8080/course/"+course_id, courseDTO);
+   }
 }
