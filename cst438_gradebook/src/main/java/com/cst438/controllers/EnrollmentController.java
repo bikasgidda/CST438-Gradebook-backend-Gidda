@@ -17,24 +17,33 @@ import com.cst438.domain.EnrollmentRepository;
 @RestController
 public class EnrollmentController {
 
-	@Autowired
-	CourseRepository courseRepository;
+   @Autowired
+   CourseRepository courseRepository;
 
-	@Autowired
-	EnrollmentRepository enrollmentRepository;
+   @Autowired
+   EnrollmentRepository enrollmentRepository;
 
-	/*
-	 * endpoint used by registration service to add an enrollment to an existing
-	 * course.
-	 */
-	@PostMapping("/enrollment")
-	@Transactional
-	public EnrollmentDTO addEnrollment(@RequestBody EnrollmentDTO enrollmentDTO) {
-		
-		//TODO  complete this method in homework 4
-		
-		return null;
-		
-	}
+   /*
+    * endpoint used by registration service to add an enrollment to an existing
+    * course.
+    */
+   @PostMapping("/enrollment")
+   @Transactional
+   public EnrollmentDTO addEnrollment(@RequestBody EnrollmentDTO enrollmentDTO) {   
+      Enrollment e = new Enrollment();
+      Course c = courseRepository.findById(enrollmentDTO.course_id).orElse(null);
+      
+      if (c == null) {
+         throw new ResponseStatusException( HttpStatus.BAD_REQUEST, "Invalid course id. "+enrollmentDTO.course_id);
+      }
+      
+      e.setStudentEmail(enrollmentDTO.studentEmail);
+      e.setStudentName(enrollmentDTO.studentName);
+      e.setCourse(c);
+            
+      enrollmentRepository.save(e);
+      
+      return enrollmentDTO;
+   }
 
 }
